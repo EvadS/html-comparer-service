@@ -1,5 +1,6 @@
 package com.se.sample.services;
 
+import com.se.sample.config.ProjectConstants;
 import com.se.sample.model.payload.DifferenceFiles;
 import com.se.sample.model.payload.StringDiff;
 import com.se.sample.utils.ComparerUtils;
@@ -116,8 +117,30 @@ public class HtmlProcessingService {
                 log.error(ex.getMessage());
             }
         }
-        log.info("Comparison completed. The row number: {}",rowNumber );
+        log.info("Comparison completed. The row numbers: {}",rowNumber );
 
+        if(rowNumber < leftElements.size() ){
+            //
+            int i = rowNumber;
+            for(;i <leftElements.size() ;i++){
+                log.debug("Put nested old element [{}} to file ", i);
+                appendDifferenceToFile(htmlNewDiffFile,
+                        String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT, leftElements.get(i).toString()));
+            }
+
+            log.debug("Right elements number: {}", i);
+        }
+
+        if(rowNumber < rightElements.size()){
+            int i = rowNumber;
+            for(;i <rightElements.size() ;i++){
+                log.debug("Put nested new html element [{}} to file ", i);
+                appendDifferenceToFile(htmlOldDiffFile,
+                        String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, rightElements.get(i).toString()));
+            }
+
+            log.debug("Left elements number: {}", i);
+        }
         return new DifferenceFiles(htmlOldDiffFile.getName(), htmlNewDiffFile.getName());
 
     }
