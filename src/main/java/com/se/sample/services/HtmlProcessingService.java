@@ -21,7 +21,10 @@ import java.nio.file.Path;
 @RequiredArgsConstructor
 public class HtmlProcessingService {
     private final static String DIFF_FILE_SUFFIX = "diff_";
-    final String mainTag = "mainTag";
+    public static final String DIV_MAIN_TAG_H_2_B = "div.mainTag > h2 > b";
+    public static final String DIV_MAIN_TAG_H_3_B = "div.mainTag > h3 > b";
+    public static final String  MAIN_TAG_SELECTOR = "div.mainTag";
+    public static final String DIV_MAIN_TAG_P = "div.mainTag > p";
 
 
     public DifferenceFiles process(Path oldFilePath, Path newFilePath) throws IOException {
@@ -29,8 +32,8 @@ public class HtmlProcessingService {
         File oldHtmlFile = newFilePath.toFile();
 
 
-        File htmlOldDiffFile =  new File(newHtmlFile.getParent() + "\\" + buildDiffFileName(newHtmlFile.getName()));
-        File htmlNewDiffFile = new File(oldHtmlFile.getParent() + "\\" +buildDiffFileName(oldHtmlFile.getName()));
+        File htmlOldDiffFile = new File(newHtmlFile.getParent() + "\\" + buildDiffFileName(newHtmlFile.getName()));
+        File htmlNewDiffFile = new File(oldHtmlFile.getParent() + "\\" + buildDiffFileName(oldHtmlFile.getName()));
 
         //clear file
         clearFile(htmlOldDiffFile);
@@ -39,36 +42,121 @@ public class HtmlProcessingService {
         Document documentLeft = Jsoup.parse(newHtmlFile, StandardCharsets.UTF_8.name());
         Document documentRight = Jsoup.parse(oldHtmlFile, StandardCharsets.UTF_8.name());
 
-        Elements leftElements = documentLeft.getElementsByClass(mainTag);
-        Elements rightElements = documentRight.getElementsByClass(mainTag);
+        //  Elements leftElements = documentLeft.getElementsByClass(mainTag);
+
+        Elements leftElements = documentLeft.select(MAIN_TAG_SELECTOR);
+        Elements rightElements = documentRight.select(MAIN_TAG_SELECTOR);
 
         final int sizeLeft = leftElements.size();
-        final int sizeRight = leftElements.size();
+        log.info("size left: {}", sizeLeft);
+
+        final int sizeRight = rightElements.size();
+        log.info("size right: {}", sizeRight);
 
         int rowNumber = 0;
         for (; rowNumber < sizeLeft && rowNumber < sizeRight; rowNumber++) {
 
-            Element oldValue = leftElements.get(rowNumber);
-            Element newValue = rightElements.get(rowNumber);
+            try {
+                Element leftElement = leftElements.get(rowNumber);
+                Element rightElement = rightElements.get(rowNumber);
 
-            final String textValueOld = oldValue.text();
-            final String textValueNew = newValue.text();
+                final Element oldElement = leftElement.select(DIV_MAIN_TAG_H_2_B).first();
+                final Element newElement = rightElement.select(DIV_MAIN_TAG_H_2_B).first();
+                comparisonH2Elements(oldElement,newElement);
 
-            final StringDiff stringDiff = ComparerUtils.checkDiff(textValueOld, textValueNew);
-            oldValue.text(org.jsoup.parser.Parser.unescapeEntities(stringDiff.getNewString(), true));
-            newValue.text(org.jsoup.parser.Parser.unescapeEntities(stringDiff.getOldString(), true));
+                //General part
+                // Chapter1
+                final Element oldElementH3 = leftElement.select(DIV_MAIN_TAG_H_3_B).first();
+                final Element newElementH3 = rightElement.select(DIV_MAIN_TAG_H_3_B).first();
+                comparisonH3Elements(oldElementH3,newElementH3);
 
-            appendDifferenceToFile(htmlOldDiffFile, oldValue);
-            appendDifferenceToFile(htmlNewDiffFile, newValue);
 
+                //Articles level
+                final Element articlesOld = leftElement.select(DIV_MAIN_TAG_P).first();
+                final Element articlesNew = rightElement.select(DIV_MAIN_TAG_P).first();
+                if (articlesOld != null && articlesNew!= null)  {
+                    log.debug("Compare articles level ");
+                    try {
+                        // TODO: could be different row number
+                        if (articlesOld.children().size() > 0 && articlesNew.children().size() > 0) {
+                            final Element articlesOldText = articlesOld.child(0);
+                            final Element articlesNewText = articlesNew.child(0);
+
+                            StringDiff stringDiff = ComparerUtils.checkDiff(articlesOldText.text(), articlesNewText.text());
+                            articlesOldText.text(stringDiff.getNewString());
+                            articlesNewText.text(stringDiff.getOldString());
+                        }
+                        else if (articlesOld.children().size() > 0 && articlesNew.children()== null){
+                            StringDiff stringDiff = ComparerUtils.checkDiff(articlesOld.children().first().text(), null);
+                            articlesOld.text(stringDiff.getNewString());
+                            articlesNew.text(stringDiff.getOldString());
+                        }
+                        else if (articlesNew.children().size() > 0 && articlesOld.children() == null){
+                            StringDiff stringDiff = ComparerUtils.checkDiff(null, articlesNew.children().first().text());
+                            articlesOld.text(stringDiff.getNewString());
+                            articlesNew.text(stringDiff.getOldString());
+                        }
+                        else if (articlesNew.children()== null && articlesOld.children() == null) {
+                            StringDiff stringDiff = ComparerUtils.checkDiff(articlesOld.text(), articlesNew.text());
+                            articlesOld.text(stringDiff.getNewString());
+                            articlesNew.text(stringDiff.getOldString());
+                        }
+
+                    }catch (Exception ex){
+                        log.error("Articles compare error. articlesOld:{}, articlesNew:{}",articlesOld,  articlesNew);
+                    }
+                    }
+
+
+                appendDifferenceToFile(htmlOldDiffFile, leftElement.toString());
+                appendDifferenceToFile(htmlNewDiffFile, rightElement.toString());
+                //   appendDifferenceToFile(htmlNewDiffFile, newValue);
+            } catch (Exception ex) {
+                log.error("An error while file comparison. Row number: {}", rowNumber);
+                log.error(ex.getMessage());
+            }
         }
+        log.info("Comparison completed. The row number: {}",rowNumber );
 
         return new DifferenceFiles(htmlOldDiffFile.getName(), htmlNewDiffFile.getName());
 
     }
 
+    private void comparisonH3Elements(Element oldElement, Element newElement) {
+        log.debug(" Compare h3 level");
+        if (oldElement != null && newElement != null) {
+
+            String leftText = oldElement.html();
+            log.debug("Old text: {}",leftText );
+
+            String rightText = newElement.html();
+            log.debug("New text: {}",rightText );
+
+            StringDiff stringDiff = ComparerUtils.checkDiff(leftText, rightText);
+
+            oldElement.html(stringDiff.getNewString());
+            newElement.html(stringDiff.getOldString());
+        }
+    }
+
+    private void comparisonH2Elements(Element oldElement, Element newElement) {
+        log.debug("Compare h2 level");
+        if (oldElement != null && newElement != null) {
+            String leftText = oldElement.html();
+            log.debug("Old text: {}",leftText );
+
+            String rightText = newElement.html();
+            log.debug("New text: {}",rightText );
+
+            StringDiff stringDiff = ComparerUtils.checkDiff(leftText, rightText);
+
+            oldElement.html(stringDiff.getNewString());
+            newElement.html(stringDiff.getOldString());
+        }
+    }
+
     private String buildDiffFileName(String filename) {
-           return DIFF_FILE_SUFFIX+  filename;
+        return DIFF_FILE_SUFFIX + filename;
     }
 
     private void clearFile(File htmlOldDiffFile) throws FileNotFoundException {
@@ -84,13 +172,13 @@ public class HtmlProcessingService {
      * @param textRow string for put to file
      * @throws IOException
      */
-    public void appendDifferenceToFile(File file, Element textRow) throws IOException {
+    public void appendDifferenceToFile(File file, String textRow) throws IOException {
         try (FileWriter fw = new FileWriter(file.getAbsoluteFile(), true)
              //BufferedWriter bw = new BufferedWriter(fw);
              //PrintWriter out = new PrintWriter(bw))
         ) {
             //TODO:
-            fw.write(textRow.toString());
+            fw.write(textRow);
         }
     }
 }

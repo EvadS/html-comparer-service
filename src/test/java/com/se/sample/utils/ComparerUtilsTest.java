@@ -113,4 +113,18 @@ class ComparerUtilsTest {
         assertEquals(rightExpected, stringDiff.getNewString());
     }
 
+    @Test
+    public void compareLettersAndNumbersShouldWorkCorrect() {
+        String left = "ab";
+        String right = "ac";
+
+        final StringDiff stringDiff = ComparerUtils.checkDiff(left, right);
+
+        String leftExpected = "a" + String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT, "c");
+        String rightExpected = "a" + String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, "b");
+
+        assertEquals(leftExpected, stringDiff.getOldString());
+        assertEquals(rightExpected, stringDiff.getNewString());
+    }
+
 }

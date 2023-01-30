@@ -12,17 +12,28 @@ public class ComparerUtils {
 
     public static StringDiff checkDiff(String oldStr, String newString) {
 
-        log.debug("Check difference between: '{}' and '{}' ", oldStr, newString);
-
-        if (!StringUtils.hasLength(oldStr) && !StringUtils.hasLength(oldStr)) {
-            return new StringDiff("", "");
-        }
-
         if (oldStr.equals(newString)) {
             log.debug("The string are equal");
             return new StringDiff(oldStr, newString);
         }
 
+        if (!StringUtils.hasLength(oldStr) && !StringUtils.hasLength(newString)) {
+            log.debug("incorrect request to compare. ");
+            return new StringDiff("", "");
+        }else if (StringUtils.hasLength(oldStr) && !StringUtils.hasLength(newString)) {
+            // left present but right is empty
+            StringDiff stringDiff = new StringDiff();
+            stringDiff.setOldString(  String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT,oldStr));
+            stringDiff.setNewString(  String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, oldStr));
+            return stringDiff;
+
+        }
+        else if (!StringUtils.hasLength(oldStr) && StringUtils.hasLength(newString)) {
+            StringDiff stringDiff = new StringDiff();
+            stringDiff.setOldString(  String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT,newString));
+            stringDiff.setNewString(  String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, newString));
+            return stringDiff;
+        }
 
         log.debug("Started old and new symbols comparing, old:{}, new:{}", oldStr, newString);
         if (oldStr.length() >= newString.length()) {
