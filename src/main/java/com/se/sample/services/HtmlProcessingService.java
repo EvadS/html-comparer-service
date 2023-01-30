@@ -47,9 +47,6 @@ public class HtmlProcessingService {
 
         int rowNumber = 0;
         for (; rowNumber < sizeLeft && rowNumber < sizeRight; rowNumber++) {
-            if (rowNumber > 20) {
-                break;
-            }
 
             Element oldValue = leftElements.get(rowNumber);
             Element newValue = rightElements.get(rowNumber);
