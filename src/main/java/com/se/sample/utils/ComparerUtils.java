@@ -20,18 +20,17 @@ public class ComparerUtils {
         if (!StringUtils.hasLength(oldStr) && !StringUtils.hasLength(newString)) {
             log.debug("incorrect request to compare. ");
             return new StringDiff("", "");
-        }else if (StringUtils.hasLength(oldStr) && !StringUtils.hasLength(newString)) {
+        } else if (StringUtils.hasLength(oldStr) && !StringUtils.hasLength(newString)) {
             // left present but right is empty
             StringDiff stringDiff = new StringDiff();
-            stringDiff.setOldString(  String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT,oldStr));
-            stringDiff.setNewString(  String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, oldStr));
+            stringDiff.setOldString(String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT, oldStr));
+            stringDiff.setNewString(String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, oldStr));
             return stringDiff;
 
-        }
-        else if (!StringUtils.hasLength(oldStr) && StringUtils.hasLength(newString)) {
+        } else if (!StringUtils.hasLength(oldStr) && StringUtils.hasLength(newString)) {
             StringDiff stringDiff = new StringDiff();
-            stringDiff.setOldString(  String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT,newString));
-            stringDiff.setNewString(  String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, newString));
+            stringDiff.setOldString(String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT, newString));
+            stringDiff.setNewString(String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, newString));
             return stringDiff;
         }
 
@@ -59,55 +58,90 @@ public class ComparerUtils {
         StringBuilder leftDifference = new StringBuilder();
         StringBuilder rightDifference = new StringBuilder();
 
+        boolean isRightDiff = false;
+        boolean isLeftDiff = false;
         int currPosition = 0;
 
-        for ( ; currPosition < leftArray.length && currPosition < rightArray.length; currPosition++) {
+        for (; currPosition < leftArray.length && currPosition < rightArray.length; currPosition++) {
 
             leftItem = leftArray[currPosition];
             rightItem = rightArray[currPosition];
 
             int compareOneTwo = Character.compare(leftItem, rightItem);
             if (compareOneTwo == 0) {
+                log.debug("Curr position: {}, Left part:'{}', right part:'{}', symbols is equal ", currPosition, leftItem, rightItem);
 
                 // have difference between old and new
                 // but now the both symbol have the same value
                 if (isDifferent) {
-                    log.debug("The difference was found before. Write diff to result");
-                    log.debug("Append difference");
+                    log.debug("The difference was found before. Old difference buffer:'{}, new difference buffer:'{}'", leftDifference, rightDifference);
+
                     sbLeft.append(String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT, leftDifference.toString().trim()));
                     sbRight.append(String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, rightDifference.toString()).trim());
 
                     leftDifference.setLength(0);
                     rightDifference.setLength(0);
+                    log.debug("Buffer with difference cleared");
                 }
 
                 sbLeft.append(leftItem);
                 sbRight.append(rightItem);
                 isDifferent = false;
             } else {
-                log.debug("Found difference between new and old symbols. left:{}, right:{} ", leftItem, rightItem);
+
+                log.debug("Left part:'{}', right part:'{}', symbols is different ", leftItem, rightItem);
                 isDifferent = true;
 
                 // save difference to buffer
                 leftDifference.append(rightItem);
+                log.debug("Old value difference:{}", leftDifference);
                 rightDifference.append(leftItem);
+                log.debug("New value difference:{}", rightDifference);
+            }
+        }
+
+        if (leftStr.length() > currPosition) {
+            //check diff
+            String substring = leftStr.substring(currPosition);
+            if (!isDifferent) {
+                rightDifference.append(String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT, substring));
+                isLeftDiff = true;
+            } else {
+                // append nested symbol to difference
+                rightDifference.append(substring);
+            }
+
+        }
+
+
+        if (rightStr.length() > currPosition) {
+            //check diff
+            String substring = rightStr.substring(currPosition);
+            // append nested symbol to difference
+
+            if (!isDifferent) {
+                leftDifference.append(String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, substring));
+                isRightDiff = true;
+            } else {
+                // append nested symbol to difference
+                leftDifference.append(substring);
             }
         }
 
         if (isDifferent) {
             log.debug("Comparable text has difference");
-            sbLeft.append(String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT, rightItem).trim());
-            sbRight.append(String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, leftItem).trim());
+            sbLeft.append(String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT, leftDifference).trim());
+            sbRight.append(String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, rightDifference).trim());
         }
 
-        // check not presented on right
-        if (currPosition < leftArray.length) {
-            String notExistsORight = leftStr.substring(currPosition, leftStr.length());
-            sbRight.append(String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, notExistsORight));
-
-            sbLeft.append(notExistsORight);
-            sbLeft.append(String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT, ""));
+        if (isRightDiff) {
+            sbLeft.append(leftDifference);
         }
+
+        if (isLeftDiff) {
+            sbRight.append(rightDifference);
+        }
+
 
         stringDiff.setOldString(sbLeft.toString());
         stringDiff.setNewString(sbRight.toString());

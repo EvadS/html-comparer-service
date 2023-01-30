@@ -2,8 +2,8 @@ package com.se.sample.config;
 
 public class ProjectConstants {
 
-    public final static String OLD_DIFFERENCE_FORMAT = "<span style=\"color:green;\">%s</span>";
-    public final static String NEW_DIFFERENCE_FORMAT = "<span style=\"color:green;\">%s</span>";
+    public final static String OLD_DIFFERENCE_FORMAT = "<span style=\"color:red;\">%s</span>";
+    public final static String NEW_DIFFERENCE_FORMAT = "<span style=\"color:red;\">%s</span>";
 
     public static final String PATH_PREFIX = "/api/v1";
     public static final String COMPARISON_API_PATH = "/comparison";

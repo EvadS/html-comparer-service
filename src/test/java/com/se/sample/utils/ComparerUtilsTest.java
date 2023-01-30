@@ -92,7 +92,7 @@ class ComparerUtilsTest {
 
         final StringDiff stringDiff = ComparerUtils.checkDiff(left, right);
 
-        String leftExpected = "21" + String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT, "")  ;
+        String leftExpected = "2" ;
         String rightExpected = "2" + String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, "1")  ;
 
         assertEquals(leftExpected, stringDiff.getOldString());
@@ -106,8 +106,8 @@ class ComparerUtilsTest {
 
         final StringDiff stringDiff = ComparerUtils.checkDiff(left, right);
 
-        String leftExpected = "abc" + String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT, "222") + " test"  ;
-        String rightExpected = "abc" + String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, "111") + " test" ;
+        String leftExpected = "abc " + String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT, "222") + " test"  ;
+        String rightExpected = "abc " + String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, "111") + " test" ;
 
         assertEquals(leftExpected, stringDiff.getOldString());
         assertEquals(rightExpected, stringDiff.getNewString());
@@ -115,13 +115,13 @@ class ComparerUtilsTest {
 
     @Test
     public void compareLettersAndNumbersShouldWorkCorrect() {
-        String left = "ab";
-        String right = "ac";
+        String left = "ВИБОРЧИЙ КОДЕКС УКРАЇНИ";
+        String right = "ВИБОРЧИЙ КОДЕКС 222УКРАЇНИ";
 
         final StringDiff stringDiff = ComparerUtils.checkDiff(left, right);
 
-        String leftExpected = "a" + String.format(ProjectConstants.OLD_DIFFERENCE_FORMAT, "c");
-        String rightExpected = "a" + String.format(ProjectConstants.NEW_DIFFERENCE_FORMAT, "b");
+        String leftExpected  = "ВИБОРЧИЙ КОДЕКС <span style=\"color:red;\">УКРАЇНИ</span>";
+        String rightExpected = "ВИБОРЧИЙ КОДЕКС <span style=\"color:red;\">222УКРАЇНИ</span>";
 
         assertEquals(leftExpected, stringDiff.getOldString());
         assertEquals(rightExpected, stringDiff.getNewString());
